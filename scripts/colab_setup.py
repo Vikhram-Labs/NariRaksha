@@ -32,9 +32,9 @@ run(f"pip uninstall -y {' '.join(packages_to_remove)}")
 print("\nSTEP 4: Installing PyTorch for CUDA 12.1 (T4 native)...")
 run("pip install torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu121 -q")
 
-# Step 5: Install bitsandbytes with exact CUDA 12.1 compatibility
-print("\nSTEP 5: Installing bitsandbytes for CUDA 12.1...")
-run("pip install bitsandbytes==0.43.3 -q")
+# Step 5: Install bitsandbytes >= 0.46.1 (required by latest transformers)
+print("\nSTEP 5: Installing bitsandbytes>=0.46.1...")
+run("pip install bitsandbytes>=0.46.1 -q")
 
 # Step 6: Install the rest of the HF stack
 print("\nSTEP 6: Installing HuggingFace ecosystem...")

@@ -93,11 +93,14 @@ run("chmod +x /content/NariRaksha/scripts/run_training.sh")
 print("\nSTEP 7: Launcher script written to scripts/run_training.sh ✅")
 
 # Step 8: Verify the full stack
-print("\nSTEP 8: Verifying installation (via subprocess with correct env)...")
-env_check = f"LD_LIBRARY_PATH={ld_path}:$LD_LIBRARY_PATH"
-run(f'{env_check} python -c "import torch; print(\\'PyTorch:\\', torch.__version__, \\'| CUDA:\\', torch.cuda.is_available())"')
-run(f'{env_check} python -c "import bitsandbytes as bnb; print(\\'bitsandbytes:\\', bnb.__version__)"')
-run(f'{env_check} python -c "from unsloth import FastLanguageModel; print(\\'Unsloth: OK\\')"')
+print("\nSTEP 8: Verifying installation...")
+import subprocess as _sp
+_env = os.environ.copy()
+if ld_path:
+    _env["LD_LIBRARY_PATH"] = ld_path + ":" + _env.get("LD_LIBRARY_PATH", "")
+_sp.run([sys.executable, "-c", "import torch; print('PyTorch:', torch.__version__, '| CUDA:', torch.cuda.is_available())"], env=_env)
+_sp.run([sys.executable, "-c", "import bitsandbytes as bnb; print('bitsandbytes:', bnb.__version__)"], env=_env)
+_sp.run([sys.executable, "-c", "from unsloth import FastLanguageModel; print('Unsloth: OK')"], env=_env)
 
 print("\n" + "=" * 60)
 print("✅ Setup complete!")

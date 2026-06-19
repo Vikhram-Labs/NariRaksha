@@ -1,0 +1,39 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Data and models (keep raw directory structure, ignore contents)
+data/processed/*
+data/raw/*
+datasets/synthetic/*
+models/
+!data/processed/.gitkeep
+!data/raw/.gitkeep
+!datasets/synthetic/.gitkeep
+!models/.gitkeep
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Logs
+logs/
+*.log
+
+# VS Code / IDE
+.vscode/
+.idea/
+*.swp
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Build files
+build/
+dist/
+*.egg-info/

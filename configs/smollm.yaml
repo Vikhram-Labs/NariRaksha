@@ -1,0 +1,18 @@
+model_id: "HuggingFaceTB/SmolLM-1.7B"
+output_dir: "models/nariraksha-smollm-1.7b"
+dataset_path: "datasets/synthetic/nariraksha_synthetic.jsonl"
+
+# QLoRA parameters
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.05
+target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
+
+# Training parameters
+batch_size: 8
+grad_accum: 2
+learning_rate: 3e-4
+max_steps: 2000
+save_steps: 200
+logging_steps: 10
+max_seq_length: 1024

@@ -23,3 +23,5 @@ indic-transliteration==2.3.5
 sentencepiece==0.2.0
 ninja
 packaging
+regex>=2024.0.0
+dill>=0.3.8

@@ -1,4 +1,12 @@
 import os
+import sys
+
+# Fix libnvJitLink CUDA version mismatch on Colab T4 (CUDA 12.1)
+_cuda_paths = ["/usr/local/cuda/lib64", "/usr/local/cuda-12.1/lib64", "/usr/lib/x86_64-linux-gnu"]
+_existing = ":".join(p for p in _cuda_paths if os.path.exists(p))
+if _existing:
+    os.environ["LD_LIBRARY_PATH"] = _existing + ":" + os.environ.get("LD_LIBRARY_PATH", "")
+
 import argparse
 import yaml
 import torch

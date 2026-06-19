@@ -1,27 +1,36 @@
-# Google Colab T4 specific requirements
-# Install standard PyTorch and transformers ecosystem first
-torch>=2.4.0
-torchvision>=0.19.0
-torchaudio>=2.4.0
-transformers>=4.41.0
+# Google Colab T4 requirements
+# ⚠️  DO NOT use `pip install -r requirements-colab.txt` directly.
+# ⚠️  Instead, run `python scripts/colab_setup.py` for a clean, ordered install.
+# These are the exact pinned versions validated for CUDA 12.1 / T4 GPU.
+
+# PyTorch - must be installed from cu121 index (see colab_setup.py)
+torch==2.4.1
+torchvision==0.19.1
+torchaudio==2.4.1
+
+# HuggingFace stack - compatible set
+transformers>=4.44.0
 datasets>=2.20.0
-accelerate>=0.30.1
-peft>=0.11.1
-trl>=0.8.6
-bitsandbytes>=0.43.3
-pydantic==2.7.1
-evaluate==0.4.2
-scikit-learn==1.4.2
+accelerate>=0.33.0
+peft>=0.12.0
+trl>=0.9.0
 huggingface_hub>=0.23.0
-pyyaml==6.0.1
-tqdm==4.66.4
-loguru==0.7.2
-networkx==3.3
-einops==0.8.0
+
+# Quantization - cu121 compatible
+bitsandbytes==0.43.3
+
+# Core utilities
+pydantic>=2.0.0
+evaluate>=0.4.2
+scikit-learn>=1.4.0
+pyyaml>=6.0.1
+tqdm>=4.66.4
+loguru>=0.7.2
+networkx>=3.0
+einops>=0.7.0
 openai
-indic-transliteration==2.3.5
-sentencepiece==0.2.0
-ninja
-packaging
+sentencepiece>=0.2.0
 regex>=2024.0.0
 dill>=0.3.8
+ninja
+packaging

@@ -46,8 +46,38 @@ def train():
     logger.info(f"Starting training for {model_id}")
     logger.info("Loading dataset...")
     
+    logger.info("Loading tokenizer for safety checks...")
+    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+        
     dataset = load_dataset("json", data_files=dataset_path, split="train")
     dataset = dataset.map(format_prompt, remove_columns=dataset.column_names)
+    
+    # --- PRE-FLIGHT SAFETY CHECKS ---
+    if len(dataset) < 1000:
+        logger.error(f"Dataset too small! Contains {len(dataset)} examples. Minimum 1000 required to prevent overfitting.")
+        return
+        
+    placeholder_phrases = ["BNS Section XX", "This constitutes", "Placeholder"]
+    for i in range(min(100, len(dataset))):
+        text = dataset[i]['text']
+        for phrase in placeholder_phrases:
+            if phrase in text:
+                logger.error(f"Placeholder data '{phrase}' detected in sample {i}. Training aborted to prevent data contamination.")
+                return
+
+    logger.info("Calculating sequence lengths...")
+    token_lengths = [len(tokenizer(ex['text'])['input_ids']) for ex in dataset]
+    avg_tokens = sum(token_lengths) / len(token_lengths)
+    if avg_tokens < 100:
+        logger.error(f"Average token count too low ({avg_tokens:.1f}). Expected > 100 for sufficient reasoning quality.")
+        return
+        
+    token_lengths.sort()
+    p95_length = token_lengths[int(len(token_lengths) * 0.95)]
+    dynamic_max_seq = min(config.get("max_seq_length", 2048), p95_length + 128)
+    logger.info(f"Safety checks passed. Scaling max_seq_length to {dynamic_max_seq} (95th percentile + padding).")
     
     # QLoRA Quantization Config (4-bit)
     bnb_config = BitsAndBytesConfig(
@@ -57,10 +87,7 @@ def train():
         bnb_4bit_compute_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
     )
     
-    logger.info("Loading model and tokenizer...")
-    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
+    logger.info("Loading model...")
         
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
@@ -106,7 +133,7 @@ def train():
         model=model,
         train_dataset=dataset,
         peft_config=peft_config,
-        max_seq_length=config.get("max_seq_length", 2048),
+        max_seq_length=dynamic_max_seq,
         dataset_text_field="text",
         tokenizer=tokenizer,
         args=training_args,

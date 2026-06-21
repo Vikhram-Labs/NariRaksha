@@ -1,5 +1,103 @@
 import os
 import sys
+
+# ──────────────────────────────────────────────────────────────────────────────
+# CUDA BOOTSTRAP — must run BEFORE torch/bitsandbytes are imported.
+#
+# Problem: bitsandbytes selects its backend (CUDA vs CPU) at import time by
+# checking whether the CUDA runtime shared library is resolvable. If it can't
+# find libcudart, it silently falls back to libbitsandbytes_cpu.so, which then
+# crashes with "undefined symbol: cdequantize_blockwise_fp32" when 4-bit ops
+# are attempted.
+#
+# Fix: dynamically locate libcudart + libnvJitLink on the real filesystem and
+# prepend their directories to LD_LIBRARY_PATH before any CUDA import happens.
+# ──────────────────────────────────────────────────────────────────────────────
+def _bootstrap_cuda_path() -> str:
+    """
+    Locate CUDA 12.x runtime libraries and inject them into LD_LIBRARY_PATH
+    before any GPU-dependent package is imported.
+
+    Colab 2025 layout quirks this handles:
+      - CUDA 12.8 lives at /usr/local/cuda-12.8/targets/x86_64-linux/lib/
+        (non-standard — NOT under lib64/)
+      - libcudart and libnvJitLink are also shipped as pip packages under
+        site-packages/nvidia/cuda_runtime/lib  and  nvidia/nvjitlink/lib
+      - A nvidia-cu13 pip package also exists with libnvJitLink.so.13 — we
+        must EXCLUDE that directory or bitsandbytes 0.45.x will pick it up
+        and crash with "libnvJitLink.so.13: cannot open shared object file".
+    """
+    import subprocess, glob
+
+    cuda_lib_dirs = set()
+
+    # ── 1. Standard layout: /usr/local/cuda-X.Y/lib64/ ──────────────────────
+    for pattern in [
+        "/usr/local/cuda*/lib64/libcudart.so*",
+        "/usr/local/cuda*/lib64/libnvJitLink*.so*",
+    ]:
+        for hit in glob.glob(pattern):
+            cuda_lib_dirs.add(os.path.dirname(hit))
+
+    # ── 2. Colab 2025 layout: cuda-X.Y/targets/arch/lib/ ────────────────────
+    for pattern in [
+        "/usr/local/cuda*/targets/*/lib/libcudart.so*",
+        "/usr/local/cuda*/targets/*/lib/libnvJitLink*.so*",
+    ]:
+        for hit in glob.glob(pattern):
+            cuda_lib_dirs.add(os.path.dirname(hit))
+
+    # ── 3. pip-installed nvidia packages (nvidia-cudart-cuXX, nvidia-nvjitlink)
+    #    These live under site-packages/nvidia/<pkg>/lib/
+    site_base = "/usr/local/lib/python3.12/dist-packages/nvidia"
+    for pkg_dir in ["cuda_runtime", "cudart", "nvjitlink"]:
+        candidate = os.path.join(site_base, pkg_dir, "lib")
+        if os.path.isdir(candidate):
+            cuda_lib_dirs.add(candidate)
+
+    # ── 4. System linker cache (catches anything ldconfig already registered) ─
+    try:
+        ldcache = subprocess.run(
+            ["ldconfig", "-p"], capture_output=True, text=True, timeout=10
+        ).stdout
+        for line in ldcache.splitlines():
+            if "libcudart" in line or ("libnvJitLink" in line and ".so.12" in line):
+                parts = line.split("=>")
+                if len(parts) == 2:
+                    cuda_lib_dirs.add(os.path.dirname(parts[1].strip()))
+    except Exception:
+        pass
+
+    # ── 5. FILTER: exclude anything that only provides CUDA 13.x libs ────────
+    #    (nvidia/cu13 ships libnvJitLink.so.13 — bitsandbytes 0.45.x can't use it)
+    def _has_cuda12_lib(d: str) -> bool:
+        return any(
+            glob.glob(os.path.join(d, "lib*.so.12*"))
+            or glob.glob(os.path.join(d, "libcudart.so*"))
+        )
+
+    cuda_lib_dirs = {d for d in cuda_lib_dirs if _has_cuda12_lib(d)}
+
+    if not cuda_lib_dirs:
+        print(
+            "[train.py WARNING] Could not find CUDA 12.x runtime libraries. "
+            "bitsandbytes may fall back to the CPU backend and crash. "
+            "Run: find /usr/local -name 'libcudart*' 2>/dev/null  to diagnose.",
+            file=sys.stderr,
+        )
+        return ""
+
+    new_dirs = ":".join(sorted(cuda_lib_dirs))
+    existing = os.environ.get("LD_LIBRARY_PATH", "")
+    os.environ["LD_LIBRARY_PATH"] = new_dirs + (":" + existing if existing else "")
+    print(f"[train.py] CUDA bootstrap OK — injected: {new_dirs}")
+    return new_dirs
+
+_cuda_dirs = _bootstrap_cuda_path()
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Now safe to import GPU-dependent packages
+# ──────────────────────────────────────────────────────────────────────────────
 import argparse
 import yaml
 import torch

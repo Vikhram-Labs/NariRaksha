@@ -1,49 +1,105 @@
-# NariRaksha 🛡️
+# 🛡️ NariRaksha
 
-**NariRaksha** is the world's first open multilingual women's safety reasoning dataset and small language model (SLM) focused on India. Designed to run efficiently on Google Colab T4 GPUs, this project empowers developers, researchers, and NGOs to build localized safety applications, policy analysis tools, and support systems.
+**NariRaksha** is an open-source Indian women's safety Small Language Model (SLM) fine-tuned to provide structured safety assessments — risk classification, severity scoring, legal context under BNS 2023 / IT Act, and actionable recommendations.
 
-## Project Objectives
-1. **Multilingual Knowledge Processing**: Ingestion of BNS, POSH, advisories, and cybercrime laws across 8 Indian languages.
-2. **NariRaksha-100K Dataset**: A high-quality reasoning dataset detailing scenarios, risk types, severities, and legal contexts.
-3. **Optimized SLMs**: QLoRA-based fine-tuning for Qwen, Gemma, SmolLM, and Phi models tailored for resource-constrained hardware (Google Colab T4).
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Vikhram-Labs/NariRaksha/blob/main/notebooks/NariRaksha_Colab.ipynb)
 
-## Supported Languages
-- English, Tamil, Hindi, Telugu, Kannada, Malayalam, Bengali, Marathi
+---
 
-## Quick Start on Colab
-1. Clone the repository
-2. Install requirements:
-   ```bash
-   pip install -r requirements-colab.txt
-   pip install -e .
-   ```
-3. Generate synthetic data:
-   ```bash
-   python nariraksha/synthetic_generation.py
-   ```
-4. Train the model (e.g., Qwen-3B):
-   ```bash
-   python training/train.py --config configs/qwen.yaml
-   ```
-5. Evaluate:
-   ```bash
-   python evaluation/evaluate.py --model_path models/nariraksha-qwen3-3b --test_data datasets/synthetic/nariraksha_synthetic.jsonl
-   ```
+## 🚀 Quickstart — Google Colab (recommended)
 
-## Repository Structure
-- `nariraksha/`: Core package for data ingestion, synthetic generation, and translation.
-- `training/`: QLoRA and PEFT training scripts.
-- `evaluation/`: Benchmark suite and testing framework.
-- `configs/`: Training hyperparameter configurations.
-- `scripts/`: HuggingFace publish scripts.
-- `data/` and `datasets/`: Local storage for raw and processed datasets.
+**One click → open notebook → run cells top to bottom.**
 
-## HuggingFace Publishing
-To publish the dataset and model to the Hugging Face Hub:
-```bash
-python scripts/publish_dataset.py --dataset_dir datasets/synthetic --repo_id your_username/NariRaksha-100K --token YOUR_TOKEN
-python scripts/publish_model.py --model_dir models/nariraksha-qwen3-3b --repo_id your_username/NariRaksha-Qwen-3B --token YOUR_TOKEN
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Vikhram-Labs/NariRaksha/blob/main/notebooks/NariRaksha_Colab.ipynb)
+
+1. Click the badge above
+2. Set Runtime → T4 GPU
+3. Fill in Cell 3 (model, steps, HF token)
+4. Run all cells
+
+No local setup. No CUDA conflicts. Everything runs inside the notebook.
+
+---
+
+## 🏗️ Architecture (v2 — clean rewrite)
+
+```
+NariRaksha-SLM/
+├── notebooks/
+│   └── NariRaksha_Colab.ipynb   ← ✅ Start here (Colab one-click)
+├── nariraksha/
+│   ├── __init__.py
+│   └── data.py                  ← Dataset generation + prompt formatting
+├── configs/
+│   └── default.yaml             ← Reference config (notebook overrides these)
+└── README.md
 ```
 
-## Quality Standard
-Adheres to production-grade standard equivalent to top AI research repositories with strong typing, robust logging (Loguru), and high modularity.
+**Key design decisions:**
+- **Unsloth only** — no direct `bitsandbytes` imports; eliminates all `libnvJitLink` CUDA errors
+- **Single notebook** — entire pipeline (install → generate → train → publish) in 10 cells
+- **Mock data by default** — no API key needed to start training
+- **HF-native publishing** — push model + dataset to Hugging Face from the notebook
+
+---
+
+## 📦 What the notebook does
+
+| Cell | Action |
+|------|--------|
+| 1 | Install `unsloth`, `datasets`, `huggingface_hub` |
+| 2 | Clone / pull this repo |
+| 3 | **Configure** (model, steps, HF token) ← edit this |
+| 4 | Generate synthetic safety dataset |
+| 5 | Load model (Qwen2.5-3B / Phi-3 / Gemma-2) |
+| 6 | QLoRA fine-tune with Unsloth |
+| 7 | Save model (LoRA + merged fp16) |
+| 8 | Quick inference test |
+| 9 | Publish model + dataset → Hugging Face |
+| 10 | Evaluate (risk accuracy, severity accuracy) |
+
+---
+
+## 🗂️ Dataset schema
+
+```json
+{
+  "scenario":           "A 24-year-old woman in Pune received threatening messages...",
+  "language":           "English",
+  "risk_type":          "blackmail / extortion",
+  "severity":           "critical",
+  "reasoning":          "The act constitutes blackmail under BNS 308(4)...",
+  "recommended_action": "File FIR immediately, preserve all screenshots...",
+  "legal_context":      "BNS Section 308(4), IT Act Section 66C",
+  "confidence":         0.96
+}
+```
+
+---
+
+## 🧠 Supported models (all tested on T4)
+
+| Model | Size | HF ID |
+|-------|------|-------|
+| Qwen2.5-3B-Instruct | 3B | `Qwen/Qwen2.5-3B-Instruct` |
+| Phi-3-mini | 3.8B | `unsloth/Phi-3-mini-4k-instruct` |
+| Gemma-2-2B | 2B | `unsloth/gemma-2-2b-it` |
+
+---
+
+## ⚖️ Legal coverage
+
+| Category | Applicable Law |
+|---|---|
+| Cyberstalking | BNS §78, IT Act §66E |
+| Online harassment | BNS §351, IT Act §67 |
+| Workplace harassment | POSH Act 2013 |
+| Domestic violence | PWDVA 2005 |
+| Deepfake / NCII | IT Act §67A, BNS §73, DPDPA 2023 |
+| Trafficking | ITPA, BNS §§143-144 |
+
+---
+
+## 📄 License
+
+Code: Apache 2.0 · Dataset: CC-BY 4.0

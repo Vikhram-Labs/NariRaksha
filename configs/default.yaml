@@ -1,0 +1,35 @@
+# NariRaksha — reference config
+# These values are informational only.
+# The Colab notebook (notebooks/NariRaksha_Colab.ipynb) sets these directly.
+
+model_id: "Qwen/Qwen2.5-3B-Instruct"
+
+# QLoRA
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.05
+target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+
+# Training
+batch_size: 2
+grad_accum: 8          # effective batch = 16
+learning_rate: 2e-4
+max_steps: 500
+warmup_steps: 50
+max_seq_length: 1024
+save_steps: 100
+logging_steps: 25
+
+# Dataset
+dataset_size: 1000
+dataset_path: "datasets/synthetic/nariraksha_synthetic.jsonl"
+
+# Output
+output_dir: "models/nariraksha-ft"

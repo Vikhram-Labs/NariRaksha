@@ -1,37 +1,12 @@
-# Google Colab T4 requirements
-# ⚠️  DO NOT use `pip install -r requirements-colab.txt` directly.
-# ⚠️  Instead, run `python scripts/colab_setup.py` for a clean, ordered install.
-# These are the exact pinned versions validated for CUDA 12.1 / T4 GPU.
+# NariRaksha — minimal Colab requirements
+# ⚠️  Do NOT use pip install -r directly.
+# ✅  Open notebooks/NariRaksha_Colab.ipynb and run Cell 1.
+#
+# These are the exact packages the notebook installs.
+# bitsandbytes is intentionally absent — Unsloth bundles a compatible version.
 
-# PyTorch - must be installed from cu121 index (see colab_setup.py)
-torch==2.4.1
-torchvision==0.19.1
-torchaudio==2.4.1
-
-# HuggingFace stack - compatible set
-transformers>=4.44.0
+unsloth
 datasets>=2.20.0
-accelerate>=0.33.0
-peft>=0.12.0
-trl>=0.9.0
 huggingface_hub>=0.23.0
-
-# Quantization - MUST be pinned: >=0.46.0 requires libnvJitLink.so.13 (CUDA 13.x)
-# Colab T4 runs CUDA 12.x — 0.45.5 is the last CUDA 12.x compatible build.
-bitsandbytes==0.45.5
-
-# Core utilities
-pydantic>=2.0.0
-evaluate>=0.4.2
-scikit-learn>=1.4.0
-pyyaml>=6.0.1
-tqdm>=4.66.4
-loguru>=0.7.2
-networkx>=3.0
-einops>=0.7.0
-openai
-sentencepiece>=0.2.0
-regex>=2024.0.0
-dill>=0.3.8
-ninja
-packaging
+pyyaml>=6.0
+tqdm>=4.66
